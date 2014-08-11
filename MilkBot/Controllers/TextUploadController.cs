@@ -38,7 +38,7 @@ namespace MilkBot.Controllers
 
                 var cache = ConnectionMultiplexer.GetDatabase();
                 var markovChainCreator = new MarkovChainCreator(cache);
-                var numWordsAdded = markovChainCreator.LoadString(buffer);
+                var numWordsAdded = markovChainCreator.LoadTextWithSentences(buffer);
                 return Ok(numWordsAdded);
             }
 

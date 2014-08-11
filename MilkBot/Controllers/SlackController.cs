@@ -76,45 +76,22 @@ namespace MilkBot.Controllers
 
             if (DecodeString(values[CommandKey]) == "/milkbotquote")
             {
-                // get the words
-                // also strip the words of quotes, italics, code marks, bolds, etc
-                var decodedMsg = DecodeString(values[TextKey]);
-                var words = decodedMsg.Split(new char[0], StringSplitOptions.RemoveEmptyEntries).Select(str => str.Trim('_', '"', '“', '”', '`', '*')).ToList();
-
                 var cache = ConnectionMultiplexer.GetDatabase();
-                var startWord = "";
-                // pick a random word, check if that word exists in the redis brain and try a different word if it doesnt
-                var foundValidWord = false;
-
-                if (words.Count == 0) {
-                    startWord = cache.KeyRandom();
-                    foundValidWord = true;
-                }
-                while (words.Count > 0) {
-                    startWord = GetRandomWordFromListAndRemoveIt(words);
-
-                    if (cache.KeyExists(startWord)) {
-                        foundValidWord = true;
-                        break;
-                    }
-                }
-
-                if (!foundValidWord) {
-                    // send error message back to user (via response)
-                    var textObject = new { text = "None of those words were in my brain. Try with a different set of words." };
-                    return Ok(textObject);
-                }
-
-                var numWordsInSentence = _random.Next(3, 10);
+                var startWord = cache.SetRandomMember("first-words-set").ToString();
                 var sentenceWords = new List<string>() {startWord};
                 var currentWord = startWord;
-
-                while (sentenceWords.Count < numWordsInSentence && cache.KeyExists(currentWord)) {
+                var lastWordOfCurrentWord = currentWord.Split(' ').Last();
+                while ((sentenceWords.Count < 5 || !cache.SetContains("last-words-set", lastWordOfCurrentWord)) && cache.KeyExists(currentWord))
+                {
                     var nextPossibleWords = cache.ListRange(currentWord).Select(rv => rv.ToString()).ToList();
 
                     // pick a random word as the next word
                     currentWord = GetRandomWordFromList(nextPossibleWords);
                     sentenceWords.Add(currentWord);
+
+                    var tempCurWord = currentWord;
+                    currentWord = String.Format("{0} {1}", lastWordOfCurrentWord, currentWord);
+                    lastWordOfCurrentWord = tempCurWord;
                 }
 
                 // construct the 'sentence'
