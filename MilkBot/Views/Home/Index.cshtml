@@ -1,0 +1,40 @@
+﻿<div class="jumbotron">
+    Upload a text file to incorporate into <em>the brain</em>.
+</div>
+@using (@Html.BeginForm("Upload", "TextUpload", FormMethod.Post, new {@enctype = "multipart/form-data"})) {
+    @Html.ValidationSummary()
+    <div>
+        <label for="textFileUpload">Text File</label>
+        <input name="textFileUpload" id="textFileUpload" type="file" />
+    </div>
+    <div>
+        <input type="button" id="Upload" value="Upload" />
+    </div>
+    <div id="messages"></div>
+}
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<script type="text/javascript">
+    $(function () {
+        $('#Upload').click(function () {
+            var formData = new FormData();
+            var opmlFile = $('#textFileUpload')[0];
+            formData.append("opmlFile", opmlFile.files[0]);
+
+            $(this).attr('disabled', 'disabled');
+            $.ajax({
+                url: '/TextUpload/Upload',
+                type: 'POST',
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false
+            })
+            .done(function(data) {
+                $(this).attr('disabled', 'enabled');
+
+                $("#messages").append("<br>" + $("#textFileUpload").val() + " has been added to the brain! " + data + " words have been added.");
+            });
+        });
+    });
+</script>
